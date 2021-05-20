@@ -1,0 +1,10 @@
+1.  run the command 'readelf -h ./a.out'
+2.  the Entry point is under the name 'Entry point address:' and it's value is 0x80482e0
+3.  Number of section headers:         34     --> there are 34 sections
+4.  run 'readelf --sections ./a.out'
+5.  .text size is  --->  [12] .text             PROGBITS        080482e0 0002e0 0001b8 00  AX  0   0 16
+	0001b8
+6. run 'readelf --symbols ./a.out'
+	since we can't find 'main' there, it is not present.
+	we can find '_start' there.
+	it's virtual address is 
