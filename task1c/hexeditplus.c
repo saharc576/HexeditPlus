@@ -3,7 +3,8 @@
 #include <stdlib.h>
 #include "hexeditplus.h"
 
-
+static char* hex_formats[] = {"%#hhx\n", "%#hx\n", "No such unit", "%#x\n"};
+static char* dec_formats[] = {"%#hhd\n", "%#hd\n", "No such unit", "%#d\n"};
 int main(int argc, char **argv)
 {
     struct fun_desc menu[] = {
@@ -169,21 +170,106 @@ void loadIntoMemory (state *s)
 }
 void memoryDisplay (state *s)
 {
-    fprintf(stdout, "not implemented yet\n");
+    FILE *file;
+    char input[BUF_SZ];
+    int address;
+    int length;
+    char *ptr;
+    char *end;
+    printf("Enter address and length\n");
     fflush(stdout);
 
+    fgets(input,BUF_SZ,stdin);
+    sscanf(input, "%X%d", &address,&length);
+
+    printf("Hexadecimal\n===========\n");
+    if (address == 0)   /* read from mem_buf */
+    {
+        print_units(s->mem_buf, s->unit_size, length, hex_formats[s->unit_size -1]);
+    }
+
+    else                /* read from memory */
+    {
+        ptr = (char *)address; 
+        end = ptr + (s->unit_size)*length;
+        while (ptr < end) 
+        {
+            printf("%c\n", *ptr);
+            ptr = ptr + s->unit_size;
+        }           
+    }
+
+    printf("Decimal\n===========\n");
+    if (address == 0)   /* read from mem_buf */
+    {
+        print_units(s->mem_buf, s->unit_size, length, dec_formats[s->unit_size -1]);      
+    }
+    else                /* read from memory */
+    {
+        ptr = (char *)address; 
+        end = ptr + (s->unit_size)*length;
+        while (ptr < end) 
+        {
+            printf("%c\n", *ptr);
+            ptr = ptr + s->unit_size;
+        }       
+    }
 }
+
+
 void saveIntoFile (state *s)
 {
-    fprintf(stdout, "not implemented yet\n");
+    FILE *output;
+    int source_address;
+    int target_location;
+    int length;
+    int file_size;
+    char input[BUF_SZ];
+
+    fprintf(stdout, "Please enter <source-address> <target-location> <length>\n");
     fflush(stdout);
+
+    fgets(input,BUF_SZ,stdin);
+    sscanf(input, "%X%d%d", &source_address,&target_location, &length);
+
+
+    if (source_address == 0)
+    {
+        fwrite(s->mem_buf, s->unit_size, length, output);
+    }
+    else 
+    {
+        if ((output = fopen(s->file_name, "w")) == NULL)
+        {
+            printf("Please provide writing premission\n");
+            fflush(stdout);
+            return;
+        }
+        fseek(output, 0L, SEEK_END);
+        file_size = ftell(output);
+        fseek(output, 0L, SEEK_SET);
+        
+        if (file_size < target_location)
+        {
+            printf("Error: target_location > file_size\n");
+            fflush(stdout);
+            return;
+        }
+        fwrite(source_address+ target_location, s->unit_size, length, output);
+
+        fclose(output);
+
+    }
 
 }
 void memoryModify (state *s)
 {
+
+
     fprintf(stdout, "not implemented yet\n");
     fflush(stdout);
 }
+
 void quit (state *s)
 {
     if (s->debug_mode == 1)
@@ -192,4 +278,19 @@ void quit (state *s)
         fflush(stderr);
     }
     exit(EXIT_SUCCESS);
+}
+
+void print_units(char* address, int unit_size, int length, char *format) 
+{
+    char* end;
+    char* curr;
+    int var;
+    end = address + (unit_size)*length;
+    curr = address;
+    while (curr < end) 
+    {
+        var = *((int*)(curr));
+        fprintf(stdout, format, var);
+        curr = curr + unit_size;
+    }
 }

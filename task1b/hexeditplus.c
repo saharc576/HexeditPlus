@@ -3,7 +3,8 @@
 #include <stdlib.h>
 #include "hexeditplus.h"
 
-
+static char* hex_formats[] = {"%#hhx\n", "%#hx\n", "No such unit", "%#x\n"};
+static char* dec_formats[] = {"%#hhd\n", "%#hd\n", "No such unit", "%#d\n"};
 int main(int argc, char **argv)
 {
     struct fun_desc menu[] = {
@@ -107,6 +108,7 @@ void setUnitSize (state *s)
     if ( c != '\n' || (choise != 1 && choise != 2 && choise != 4)) 
     {
         printf("Not a valid size\n");
+        fflush(stdout);
         return;
     }
 
@@ -124,18 +126,97 @@ void loadIntroMemory (state *s)
     fflush(stdout);
 
 }
+
 void loadIntoMemory (state *s)
 {
-    fprintf(stdout, "not implemented yet\n");
-    fflush(stdout);
+    FILE *file;
+    char input[BUF_SZ];
+    int location;
+    int length;
+    if (strcmp(s->file_name, "") == 0)
+    {
+        printf("Please set file name first\n");
+        fflush(stdout);
+        return;
+    }
+    if ((file = fopen(s->file_name, "r")) == NULL)
+    {
+        printf("Please provide reading premission\n");
+        fflush(stdout);
+        return;
+    }
 
+    printf("Please enter <location> <length>\n");
+    fflush(stdout);  
+
+    fgets(input,BUF_SZ,stdin);
+    sscanf(input, "%X%d", &location,&length);
+
+    
+    if (s->debug_mode == 1)
+    {
+        fprintf(stderr, "Debug: file name is %s\n", s->file_name);
+        fflush(stderr);
+        fprintf(stderr, "Debug: location is %X\n", location);
+        fflush(stderr);
+        fprintf(stderr, "Debug: length is %d\n", length);
+        fflush(stderr);
+    }
+
+    fseek(file, location, SEEK_SET);
+    fread(s->mem_buf, s->unit_size, length, file);
+
+    fclose(file);
 }
 void memoryDisplay (state *s)
 {
-    fprintf(stdout, "not implemented yet\n");
+    FILE *file;
+    char input[BUF_SZ];
+    int address;
+    int length;
+    char *ptr;
+    char *end;
+    printf("Enter address and length\n");
     fflush(stdout);
 
+    fgets(input,BUF_SZ,stdin);
+    sscanf(input, "%X%d", &address,&length);
+
+    printf("Hexadecimal\n===========\n");
+    if (address == 0)   /* read from mem_buf */
+    {
+        print_units(s->mem_buf, s->unit_size, length, hex_formats[s->unit_size -1]);
+    }
+
+    else                /* read from memory */
+    {
+        ptr = (char *)address; 
+        end = ptr + (s->unit_size)*length;
+        while (ptr < end) 
+        {
+            printf("%c\n", *ptr);
+            ptr = ptr + s->unit_size;
+        }           
+    }
+
+    printf("Decimal\n===========\n");
+    if (address == 0)   /* read from mem_buf */
+    {
+        print_units(s->mem_buf, s->unit_size, length, dec_formats[s->unit_size -1]);      
+    }
+    else                /* read from memory */
+    {
+        ptr = (char *)address; 
+        end = ptr + (s->unit_size)*length;
+        while (ptr < end) 
+        {
+            printf("%c\n", *ptr);
+            ptr = ptr + s->unit_size;
+        }       
+    }
 }
+
+
 void saveIntoFile (state *s)
 {
     fprintf(stdout, "not implemented yet\n");
@@ -144,9 +225,12 @@ void saveIntoFile (state *s)
 }
 void memoryModify (state *s)
 {
+
+
     fprintf(stdout, "not implemented yet\n");
     fflush(stdout);
 }
+
 void quit (state *s)
 {
     if (s->debug_mode == 1)
@@ -155,4 +239,19 @@ void quit (state *s)
         fflush(stderr);
     }
     exit(EXIT_SUCCESS);
+}
+
+void print_units(char* address, int unit_size, int length, char *format) 
+{
+    char* end;
+    char* curr;
+    int var;
+    end = address + (unit_size)*length;
+    curr = address;
+    while (curr < end) 
+    {
+        var = *((int*)(curr));
+        fprintf(stdout, format, var);
+        curr = curr + unit_size;
+    }
 }
