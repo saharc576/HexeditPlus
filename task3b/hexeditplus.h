@@ -34,4 +34,5 @@ void memoryDisplay (state *s);
 void saveIntoFile (state *s);
 void memoryModify (state *s);
 void quit (state *s);
+void disable (state *s);
 void print_units(unsigned char* address, int unit_size,int length, char *formats); 

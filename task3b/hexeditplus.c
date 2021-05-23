@@ -15,6 +15,7 @@ int main(int argc, char **argv)
         {"Memory Display", memoryDisplay},
         {"Save Into File", saveIntoFile},
         {"Memory Modify", memoryModify},
+        {"Disable (3b)", disable},
         {"Quit", quit}
         };
 
@@ -27,6 +28,13 @@ int main(int argc, char **argv)
 
     while (1) 
     {
+
+        // if (s->debug_mode == 1)
+        // {
+        //     fprintf(stderr, "Debug: file name set to %s\n", s->file_name);
+        //     fflush(stderr);
+        // }
+
         printf("Choose actoin:\n");
 
         for (i = 0; i < upperBound ; i++) 
@@ -164,7 +172,8 @@ void loadIntoMemory (state *s)
     }
 
     fseek(file, location, SEEK_SET);
-    fread(s->mem_buf, s->unit_size, length, file);
+    s->mem_count = fread(s->mem_buf, s->unit_size, length, file);
+    s->mem_count = (s->mem_count) * (s->unit_size);
 
     fclose(file);
 }
@@ -260,13 +269,42 @@ void saveIntoFile (state *s)
 
 
 }
+
 void memoryModify (state *s)
 {
+    char input[BUF_SZ];
+    int location;
+    int val;
+    char *location_ptr;
+    unsigned char *end;
 
-
-    fprintf(stdout, "not implemented yet\n");
+    fprintf(stdout, "Please enter <location> <val>\n");
     fflush(stdout);
+    
+    fgets(input,BUF_SZ,stdin);
+    sscanf(input, "%X%X", &location,&val);
+
+    if (s->debug_mode == 1)
+    {
+        printf("Debug:\nlocation = %X\nval = %X\n", location, val);
+        fflush(stderr);
+    }
+
+    location_ptr = (char*)location;
+    end = s->mem_buf + (s->mem_count - 1)*(s->unit_size);
+    if (location_ptr > end)
+    {
+        if (s->debug_mode == 1)
+        {
+            printf("Debug: no such location: %d\n", location);
+            fflush(stderr);
+        }
+        return;
+    }
+    location_ptr = (s->mem_buf)+location;
+    memcpy(location_ptr, &val, s->unit_size);
 }
+
 
 void quit (state *s)
 {
@@ -291,4 +329,58 @@ void print_units(unsigned char* address, int unit_size, int length, char *format
         fprintf(stdout, format, var);
         curr = curr + unit_size;
     }
+}
+
+void disable (state *s) 
+{
+    char buffer[BUF_SZ];
+    FILE *output;
+    int target_location;
+    int length;
+    int file_size;
+    char input[BUF_SZ];
+    int i;
+
+    fprintf(stdout, "Please enter <target-location> <length>\n");
+    fflush(stdout);
+
+    fgets(input,BUF_SZ,stdin);
+    sscanf(input, "%X%d",&target_location, &length);
+    
+    if ((output = fopen(s->file_name, "rb+")) == NULL)
+    {
+        if (s->debug_mode == 1)
+        {
+            printf("Please provide writing premission\n");
+            fflush(stderr);
+        }
+        return;
+    }
+
+    fseek(output, 0L, SEEK_END);
+    file_size = ftell(output);
+    fseek(output, 0L, SEEK_SET);
+
+    if (file_size < target_location)
+    {
+        if (s->debug_mode == 1)
+        {
+            printf("Error: target_location = %d > file_size = %d\n", target_location, file_size);
+            fflush(stderr);
+        }
+        return;
+    }
+
+    fseek(output, target_location, SEEK_SET);
+
+    for (i=0; i<length; i++)
+    {
+        buffer[i] = 0x90;
+    }
+    
+    fwrite(buffer, 1, length, output);
+    
+    fclose(output);
+
+
 }

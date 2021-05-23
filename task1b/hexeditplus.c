@@ -194,7 +194,8 @@ void memoryDisplay (state *s)
         end = ptr + (s->unit_size)*length;
         while (ptr < end) 
         {
-            printf("%c\n", *ptr);
+            
+            printf(hex_formats[s->unit_size -1], *(ptr) - '0');
             ptr = ptr + s->unit_size;
         }           
     }
@@ -210,7 +211,7 @@ void memoryDisplay (state *s)
         end = ptr + (s->unit_size)*length;
         while (ptr < end) 
         {
-            printf("%c\n", *ptr);
+            printf(dec_formats[s->unit_size -1], *(ptr) - '0');
             ptr = ptr + s->unit_size;
         }       
     }

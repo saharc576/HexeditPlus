@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "hexeditplus.h"
+#include "task1.h"
 
 static char* hex_formats[] = {"%#hhx\n", "%#hx\n", "No such unit", "%#x\n"};
 static char* dec_formats[] = {"%#hhd\n", "%#hd\n", "No such unit", "%#d\n"};
@@ -27,6 +27,13 @@ int main(int argc, char **argv)
 
     while (1) 
     {
+
+        if (s->debug_mode == 1)
+        {
+            fprintf(stderr, "Debug:\nunit size: %d\nfile name: %s\nmem_count: %d\n",s->unit_size, s->file_name, s->mem_count);
+            fflush(stderr);
+        }
+
         printf("Choose actoin:\n");
 
         for (i = 0; i < upperBound ; i++) 
@@ -43,7 +50,7 @@ int main(int argc, char **argv)
         if ( c != '\n' || choise >= upperBound || choise < 0) 
         {
             printf("Not within bounds\n");
-            // free(carray);
+            free(s);
             exit(EXIT_FAILURE);
         }
         else 
@@ -120,12 +127,6 @@ void setUnitSize (state *s)
         fflush(stderr);
     }
 }
-void loadIntroMemory (state *s) 
-{
-    fprintf(stdout, "not implemented yet\n");
-    fflush(stdout);
-
-}
 
 void loadIntoMemory (state *s)
 {
@@ -164,7 +165,8 @@ void loadIntoMemory (state *s)
     }
 
     fseek(file, location, SEEK_SET);
-    fread(s->mem_buf, s->unit_size, length, file);
+    s->mem_count = fread(s->mem_buf, s->unit_size, length, file);
+    s->mem_count = (s->mem_count) * (s->unit_size);
 
     fclose(file);
 }
@@ -260,13 +262,43 @@ void saveIntoFile (state *s)
 
 
 }
+
 void memoryModify (state *s)
 {
+    char input[BUF_SZ];
+    int location;
+    int val;
+    char *location_ptr;
+    char *val_ptr;
+    unsigned char *end;
 
-
-    fprintf(stdout, "not implemented yet\n");
+    fprintf(stdout, "Please enter <location> <val>\n");
     fflush(stdout);
+    
+    fgets(input,BUF_SZ,stdin);
+    sscanf(input, "%X%X", &location,&val);
+
+    if (s->debug_mode == 1)
+    {
+        printf("Debug:\nlocation = %X\nval = %X\n", location, val);
+        fflush(stderr);
+    }
+
+    location_ptr = (char*)location;
+    end = s->mem_buf + (s->mem_count - 1)*(s->unit_size);
+    if (location_ptr > end)
+    {
+        if (s->debug_mode == 1)
+        {
+            printf("Debug: no such location: %d\n", location);
+            fflush(stderr);
+        }
+        return;
+    }
+    location_ptr = (s->mem_buf)+location;
+    memcpy(location_ptr, &val, s->unit_size);
 }
+
 
 void quit (state *s)
 {
@@ -275,6 +307,7 @@ void quit (state *s)
         fprintf(stderr, "Debug: quitting\n");
         fflush(stderr);
     }
+    free(s);
     exit(EXIT_SUCCESS);
 }
 
